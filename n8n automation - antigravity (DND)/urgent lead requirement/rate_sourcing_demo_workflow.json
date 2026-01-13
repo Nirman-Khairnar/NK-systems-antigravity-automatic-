@@ -1,0 +1,156 @@
+{
+  "name": "OTWL Rate Sourcing - AI Parser Demo",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "cf9330cb-b028-42ce-be43-021afc73cd24",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1.0,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "email_text",
+              "name": "email_text",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "source_agent",
+              "name": "source_agent",
+              "value": "Demo Agent",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "708cd125-db4f-4ffb-ada0-28dcdfeefbfb",
+      "name": "Email Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1.0,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.email_text }}",
+        "options": {
+          "systemMessage": "You are a freight forwarding rate extraction specialist.\n\nYour job: Extract shipping rate information from agent emails and return ONLY a valid JSON object.\n\nRequired fields (use \"N/A\" if not found):\n{\n  \"agent_name\": \"Name of the agent/company\",\n  \"ocean_freight_usd\": \"USD amount (number only, e.g., 2450)\",\n  \"pol\": \"Port of Loading\",\n  \"pod\": \"Port of Discharge\", \n  \"transit_time_days\": \"Transit time in days (number only)\",\n  \"routing\": \"Shipping line/routing details\",\n  \"valid_until\": \"Rate validity date\",\n  \"earliest_etd\": \"Earliest departure date\",\n  \"additional_charges\": \"Any extra charges mentioned\"\n}\n\nCRITICAL: Return ONLY the JSON object. No explanations, no markdown, no extra text."
+        }
+      },
+      "id": "80cd3d95-f45d-4d56-b1e3-f3ae1f11064c",
+      "name": "Extract Rate Data",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "91cef12b-771f-434a-a45b-e92d4de80cd1",
+      "name": "OpenAI GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.0,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "formatted_output",
+              "name": "formatted_summary",
+              "value": "=\ud83d\udcca EXTRACTED RATE INFORMATION\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\nAgent: {{ $json.output.agent_name }}\nOcean Freight: ${{ $json.output.ocean_freight_usd }}\nRoute: {{ $json.output.pol }} \u2192 {{ $json.output.pod }}\nTransit: {{ $json.output.transit_time_days }} days\nCarrier: {{ $json.output.routing }}\nValid Until: {{ $json.output.valid_until }}\nEarliest ETD: {{ $json.output.earliest_etd }}\nExtra Charges: {{ $json.output.additional_charges }}\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "b0d1e5f2-a857-405e-9620-b90aceecebd4",
+      "name": "Format as Table",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1.0,
+      "position": [
+        880,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Email Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Input": {
+      "main": [
+        [
+          {
+            "node": "Extract Rate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Rate Data": {
+      "main": [
+        [
+          {
+            "node": "Format as Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Rate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "88a7ed1a-b65b-4062-ab67-e34b28909631",
+  "meta": {
+    "templateId": "generated_standard"
+  },
+  "tags": []
+}

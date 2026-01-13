@@ -1,0 +1,162 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Department Challenge Schema",
+    "description": "Structured format for departments to challenge proposals and suggest improvements",
+    "type": "object",
+    "properties": {
+        "challenge_id": {
+            "type": "string",
+            "description": "Unique identifier for this challenge"
+        },
+        "proposal_id": {
+            "type": "string",
+            "description": "Reference to the proposal being challenged"
+        },
+        "department": {
+            "type": "string",
+            "enum": [
+                "sales-team",
+                "engineering-team",
+                "research-team",
+                "operations-team",
+                "client-management-team",
+                "content-team",
+                "marketing-team",
+                "analytics-reporter",
+                "project-management",
+                "testing-experimenting",
+                "NK-personal-team"
+            ],
+            "description": "Department submitting the challenge"
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "challenge_type": {
+            "type": "string",
+            "enum": [
+                "risk_identified",
+                "better_alternative",
+                "optimization",
+                "feasibility_concern",
+                "question"
+            ],
+            "description": "Type of feedback being provided"
+        },
+        "risk_assessment": {
+            "type": "object",
+            "properties": {
+                "risk_level": {
+                    "type": "string",
+                    "enum": [
+                        "critical",
+                        "high",
+                        "medium",
+                        "low",
+                        "none"
+                    ],
+                    "description": "Severity of identified risks"
+                },
+                "risks": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of specific risks identified"
+                }
+            }
+        },
+        "alternative_approach": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Description of the alternative approach"
+                },
+                "advantages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Why this is better"
+                }
+            }
+        },
+        "impact_analysis": {
+            "type": "object",
+            "properties": {
+                "time_impact": {
+                    "type": "string",
+                    "enum": [
+                        "much_faster",
+                        "faster",
+                        "same",
+                        "slower",
+                        "much_slower"
+                    ],
+                    "description": "Impact on timeline"
+                },
+                "cost_impact": {
+                    "type": "string",
+                    "enum": [
+                        "much_cheaper",
+                        "cheaper",
+                        "same",
+                        "expensive",
+                        "much_expensive"
+                    ],
+                    "description": "Impact on cost"
+                },
+                "quality_impact": {
+                    "type": "string",
+                    "enum": [
+                        "much_better",
+                        "better",
+                        "same",
+                        "worse",
+                        "much_worse"
+                    ],
+                    "description": "Impact on quality"
+                }
+            }
+        },
+        "first_principles_reasoning": {
+            "type": "string",
+            "description": "First-principles explanation of why this approach is superior"
+        },
+        "recommendation": {
+            "type": "string",
+            "enum": [
+                "approve_as_is",
+                "approve_with_changes",
+                "need_more_info",
+                "reject"
+            ],
+            "description": "Department's recommendation"
+        },
+        "confidence_level": {
+            "type": "string",
+            "enum": [
+                "very_high",
+                "high",
+                "medium",
+                "low"
+            ],
+            "description": "Department's confidence in their assessment"
+        },
+        "notes": {
+            "type": "string",
+            "description": "Additional context or notes"
+        }
+    },
+    "required": [
+        "challenge_id",
+        "proposal_id",
+        "department",
+        "timestamp",
+        "challenge_type",
+        "recommendation",
+        "confidence_level"
+    ]
+}

@@ -1,0 +1,7 @@
+.tmp/
+.env
+kind-config.yaml
+credentials.json
+token.json
+__pycache__/
+*.pyc

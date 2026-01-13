@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Standard Inter-Departmental Response",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["success", "error", "pending"],
+      "description": "Execution status of the request."
+    },
+    "data": {
+      "type": "object",
+      "description": "Payload containing the actual requested data."
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable message or error description."
+    },
+    "source_department": {
+      "type": "string",
+      "description": "The team that generated this response."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": ["status", "source_department", "timestamp"]
+}

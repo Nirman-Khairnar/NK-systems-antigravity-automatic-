@@ -1,0 +1,505 @@
+{
+  "name": "OTWL Rate Management - Steps 3-10",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "subject": "rate request,quotation,freight quote",
+          "includeSpam": false
+        },
+        "options": {}
+      },
+      "id": "8ae0ea42-91e1-4c8a-901d-cc031d2d7590",
+      "name": "Customer Inquiry Received",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.0,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\n// Extract customer inquiry details from email\nconst email = $input.all()[0].json;\n\nreturn {\n  inquiry_id: 'INQ-' + new Date().getTime() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase(),\n  customer_email: email.from,\n  customer_name: email.from.split('<')[0].trim(),\n  subject: email.subject,\n  body: email.textPlain || email.snippet,\n  received_date: new Date().toISOString(),\n  status: 'pending_rates'\n};\n"
+      },
+      "id": "12d7e9dd-6fa8-4b79-86e7-cfe8dbcda1e7",
+      "name": "Extract Inquiry Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1.0,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{ $json.customer_email }}",
+        "subject": "Re: {{ $json.subject }}",
+        "message": "Dear {{ $json.customer_name }},\n\nThank you for your inquiry. We have received your rate request and are currently sourcing quotes from our network of agents.\n\nYou can expect to receive our competitive quotation within 24-48 hours.\n\nInquiry Reference: {{ $json.inquiry_id }}\n\nBest regards,\nOcean Transworld Logistics Team",
+        "options": {}
+      },
+      "id": "8bce9d71-68b8-4ee0-9f75-1c21c8cba613",
+      "name": "Send Auto-Reply to Customer",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1.0,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": {
+          "__rl": true,
+          "value": "inquiries",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "inquiry_id": "={{ $json.inquiry_id }}",
+            "customer_email": "={{ $json.customer_email }}",
+            "customer_name": "={{ $json.customer_name }}",
+            "subject": "={{ $json.subject }}",
+            "received_date": "={{ $json.received_date }}",
+            "status": "={{ $json.status }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "93469ca5-3159-44b4-b770-0980b468d6fa",
+      "name": "Log Inquiry in Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.0,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": {
+          "__rl": true,
+          "value": "agents",
+          "mode": "list"
+        },
+        "options": {
+          "range": "A2:C100"
+        }
+      },
+      "id": "e98610da-1554-4960-a671-b733e9c22955",
+      "name": "Get Agent List",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.0,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{ $json.agent_email }}",
+        "subject": "Rate Request - {{ $('Extract Inquiry Details').item.json.inquiry_id }}",
+        "message": "Dear {{ $json.agent_name }},\n\nWe are requesting a freight quote for the following shipment:\n\nReference: {{ $('Extract Inquiry Details').item.json.inquiry_id }}\nCustomer: {{ $('Extract Inquiry Details').item.json.customer_name }}\n\nPlease provide your best rates including:\n- Ocean Freight (USD per container)\n- Port of Loading (POL)\n- Port of Discharge (POD)\n- Transit Time\n- Routing/Carrier\n- Rate Validity\n- Earliest ETD\n\nPlease respond to this email with your quote at the earliest.\n\nBest regards,\nOTWL Team",
+        "options": {}
+      },
+      "id": "16f4d482-93c9-4b36-9461-04116e79d081",
+      "name": "Send Rate Request to Agents",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1.0,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "subject": "INQ-,Rate Request",
+          "includeSpam": false
+        },
+        "options": {}
+      },
+      "id": "744a31f7-0897-4b21-8559-eed8258c40c2",
+      "name": "Agent Response Received",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.0,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nconst email = $input.all()[0].json;\nconst subject = email.subject;\nconst match = subject.match(/INQ-\\d+-[A-Z0-9]+/);\n\nreturn {\n  inquiry_id: match ? match[0] : 'UNKNOWN',\n  agent_email: email.from,\n  email_body: email.textPlain || email.snippet,\n  received_date: new Date().toISOString()\n};\n"
+      },
+      "id": "c02b1d9f-bc4b-4119-a028-93bb7b80e1b9",
+      "name": "Extract Inquiry ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1.0,
+      "position": [
+        220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.email_body }}",
+        "options": {
+          "systemMessage": "You are a freight forwarding rate extraction specialist.\n\nExtract shipping rate information and return ONLY a valid JSON object.\n\nRequired fields (use \"N/A\" if not found):\n{\n  \"agent_name\": \"Name of agent/company\",\n  \"ocean_freight_usd\": \"USD amount (number only)\",\n  \"pol\": \"Port of Loading\",\n  \"pod\": \"Port of Discharge\",\n  \"transit_time_days\": \"Transit days (number only)\",\n  \"routing\": \"Shipping line/routing\",\n  \"valid_until\": \"Rate validity date\",\n  \"earliest_etd\": \"Earliest departure date\",\n  \"additional_charges\": \"Extra charges\"\n}\n\nCRITICAL: Return ONLY the JSON object. No explanations."
+        }
+      },
+      "id": "2340bd18-17f2-47d9-959f-4d3f67bdccc3",
+      "name": "AI Parse Rate Data",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        440,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "12ce0765-6593-4979-8e97-332d85ac4150",
+      "name": "OpenAI GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.0,
+      "position": [
+        660,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": {
+          "__rl": true,
+          "value": "agent_rates",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "inquiry_id": "={{ $('Extract Inquiry ID').item.json.inquiry_id }}",
+            "agent_name": "={{ $json.output.agent_name }}",
+            "ocean_freight_usd": "={{ $json.output.ocean_freight_usd }}",
+            "pol": "={{ $json.output.pol }}",
+            "pod": "={{ $json.output.pod }}",
+            "transit_time_days": "={{ $json.output.transit_time_days }}",
+            "routing": "={{ $json.output.routing }}",
+            "valid_until": "={{ $json.output.valid_until }}",
+            "earliest_etd": "={{ $json.output.earliest_etd }}",
+            "received_date": "={{ $('Extract Inquiry ID').item.json.received_date }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "cad1b63e-4a80-4f9b-84e7-25bd4a9bb6b0",
+      "name": "Append Rate to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.0,
+      "position": [
+        880,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": {
+          "__rl": true,
+          "value": "agent_rates",
+          "mode": "list"
+        },
+        "filters": {
+          "conditions": {
+            "inquiry_id": "={{ $('Extract Inquiry ID').item.json.inquiry_id }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "ceb20502-3310-4027-a04a-3ad49b56a648",
+      "name": "Check Rate Count",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.0,
+      "position": [
+        1100,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.length }}",
+              "operation": "largerEqual",
+              "rightValue": 3
+            }
+          ]
+        }
+      },
+      "id": "5c0a660f-2bdc-4bda-b28b-73a864c03fde",
+      "name": "Have 3+ Rates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [
+        1320,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nconst rates = $input.all().map(item => item.json);\n\n// Sort by price (lowest first)\nconst sorted = rates.sort((a, b) => \n  parseFloat(a.ocean_freight_usd) - parseFloat(b.ocean_freight_usd)\n);\n\nconst top3 = sorted.slice(0, 3);\n\nreturn {\n  inquiry_id: rates[0].inquiry_id,\n  top_rates: top3,\n  quotation_text: top3.map((r, i) => \n    `Option ${i+1}: ${r.agent_name}\n    Rate: $${r.ocean_freight_usd}\n    Route: ${r.pol} \u2192 ${r.pod}\n    Transit: ${r.transit_time_days} days\n    Carrier: ${r.routing}\n    Valid Until: ${r.valid_until}\n    `\n  ).join('\\n---\\n')\n};\n"
+      },
+      "id": "a838df6a-60b2-4464-a44a-3474cd0d4ad6",
+      "name": "Generate Quotation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1.0,
+      "position": [
+        1540,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{ $('Extract Inquiry Details').item.json.customer_email }}",
+        "subject": "Quotation - {{ $json.inquiry_id }}",
+        "message": "Dear Customer,\n\nThank you for your patience. We have received competitive rates from our agents.\n\nHere are our top 3 options:\n\n{{ $json.quotation_text }}\n\nPlease review and let us know which option you would like to proceed with.\n\nBest regards,\nOcean Transworld Logistics Team",
+        "options": {}
+      },
+      "id": "10f1f05b-fcd2-4be1-a900-8e7b89ae8efa",
+      "name": "Send Quotation to Customer",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1.0,
+      "position": [
+        1760,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": {
+          "__rl": true,
+          "value": "quotations",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "inquiry_id": "={{ $json.inquiry_id }}",
+            "quote_sent_date": "={{ new Date().toISOString() }}",
+            "status": "pending_customer_response"
+          }
+        }
+      },
+      "id": "c7e5cb40-a318-4908-9576-a6476096ecb0",
+      "name": "Log Quotation Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.0,
+      "position": [
+        1980,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Customer Inquiry Received": {
+      "main": [
+        [
+          {
+            "node": "Extract Inquiry Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Inquiry Details": {
+      "main": [
+        [
+          {
+            "node": "Send Auto-Reply to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Auto-Reply to Customer": {
+      "main": [
+        [
+          {
+            "node": "Log Inquiry in Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Inquiry in Sheets": {
+      "main": [
+        [
+          {
+            "node": "Get Agent List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Agent List": {
+      "main": [
+        [
+          {
+            "node": "Send Rate Request to Agents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Response Received": {
+      "main": [
+        [
+          {
+            "node": "Extract Inquiry ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Inquiry ID": {
+      "main": [
+        [
+          {
+            "node": "AI Parse Rate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Parse Rate Data": {
+      "main": [
+        [
+          {
+            "node": "Append Rate to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Rate to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Count": {
+      "main": [
+        [
+          {
+            "node": "Have 3+ Rates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Have 3+ Rates?": {
+      "main": [
+        [
+          {
+            "node": "Generate Quotation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Quotation": {
+      "main": [
+        [
+          {
+            "node": "Send Quotation to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Quotation to Customer": {
+      "main": [
+        [
+          {
+            "node": "Log Quotation Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Parse Rate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "861f6b6f-f7bd-4ff5-aafa-2d7a3eec9b08",
+  "meta": {
+    "templateId": "generated_standard"
+  },
+  "tags": []
+}

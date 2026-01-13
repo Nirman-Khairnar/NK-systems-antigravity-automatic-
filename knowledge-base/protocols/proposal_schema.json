@@ -1,0 +1,84 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "User Proposal Schema",
+    "description": "Structured format for user proposals that departments will evaluate",
+    "type": "object",
+    "properties": {
+        "proposal_id": {
+            "type": "string",
+            "description": "Unique identifier for this proposal"
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the proposal was submitted"
+        },
+        "proposal_type": {
+            "type": "string",
+            "enum": [
+                "new_product",
+                "automation",
+                "process_improvement",
+                "marketing_campaign",
+                "client_project",
+                "infrastructure",
+                "other"
+            ],
+            "description": "Category of the proposal"
+        },
+        "title": {
+            "type": "string",
+            "description": "Brief title of the proposal"
+        },
+        "description": {
+            "type": "string",
+            "description": "Detailed description of what the user wants to accomplish"
+        },
+        "goals": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "List of specific goals/outcomes desired"
+        },
+        "constraints": {
+            "type": "object",
+            "properties": {
+                "budget": {
+                    "type": "string",
+                    "description": "Budget constraints if any"
+                },
+                "timeline": {
+                    "type": "string",
+                    "description": "Timeline requirements"
+                },
+                "resources": {
+                    "type": "string",
+                    "description": "Resource limitations"
+                }
+            },
+            "description": "Any constraints the solution must work within"
+        },
+        "context": {
+            "type": "string",
+            "description": "Background context, why this is needed now"
+        },
+        "priority": {
+            "type": "string",
+            "enum": [
+                "urgent",
+                "high",
+                "medium",
+                "low"
+            ],
+            "description": "Priority level from user perspective"
+        }
+    },
+    "required": [
+        "proposal_id",
+        "timestamp",
+        "title",
+        "description",
+        "priority"
+    ]
+}
